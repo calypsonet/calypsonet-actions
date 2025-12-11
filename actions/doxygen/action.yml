@@ -22,7 +22,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Action Version Info"
-        echo "Using keypop-actions version: ${{ env.GITHUB_ACTION_REF }}"
+        echo "Using calypsonet-actions version: ${{ env.GITHUB_ACTION_REF }}"
         echo "SHA: ${{ github.sha }}"
         echo "Action path: ${{ github.action_path }}"
         echo "::endgroup::"
@@ -94,8 +94,8 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       working-directory: ${{ inputs.repo-name }}
       run: |
-        git config user.name "Eclipse Keypop Bot"
-        git config user.email "${REPO_NAME}-bot@eclipse.org"
+        git config user.name "Calypsonet Bot"
+        git config user.email "${REPO_NAME}-bot@calypsonet.org"
         git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
         git add .
         if [ -n "$VERSION" ]; then
@@ -109,5 +109,5 @@ runs:
       uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ inputs.github-token }}
-        repository: eclipse-keypop/keypop-api-docs
+        repository: calypsonet/calypsonet-terminal-api-docs
         event-type: update-submodules

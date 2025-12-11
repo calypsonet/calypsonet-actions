@@ -28,7 +28,7 @@ jobs:
           echo "name=$REPO_NAME" >> $GITHUB_OUTPUT
 
       - name: Generate and publish Doxygen documentation
-        uses: eclipse-keypop/keypop-actions/actions/doxygen@main  # NOSONAR - Same organization, trusted source
+        uses: calypsonet/calypsonet-actions/actions/doxygen@main  # NOSONAR - Same organization, trusted source
         with:
           version: ${{ inputs.version }}
           repo-name: ${{ steps.repo.outputs.name }}
