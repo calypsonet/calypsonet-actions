@@ -75,10 +75,11 @@ jobs:
           echo "Building and publishing snapshot package..."
           ./gradlew build publish
 
-      - name: Update documentation
-        if: ${{ inputs.update-documentation }}
-        uses: calypsonet/calypsonet-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
-        with:
-          project-name: ${{ steps.metadata.outputs.project-name }}
-          project-version: ${{ steps.metadata.outputs.project-version }}
-          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
+# DISABLED
+#      - name: Update documentation
+#        if: ${{ inputs.update-documentation }}
+#        uses: calypsonet/calypsonet-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
+#        with:
+#          project-name: ${{ steps.metadata.outputs.project-name }}
+#          project-version: ${{ steps.metadata.outputs.project-version }}
+#          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}

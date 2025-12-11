@@ -130,10 +130,11 @@ jobs:
           fi
           rm -f "$response_file"
 
-      - name: Update documentation
-        if: ${{ inputs.update-documentation }}
-        uses: calypsonet/calypsonet-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
-        with:
-          project-name: ${{ steps.metadata.outputs.project-name }}
-          project-version: ${{ github.event.release.tag_name }}
-          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
+# DISABLED
+#      - name: Update documentation
+#        if: ${{ inputs.update-documentation }}
+#        uses: calypsonet/calypsonet-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
+#        with:
+#          project-name: ${{ steps.metadata.outputs.project-name }}
+#          project-version: ${{ github.event.release.tag_name }}
+#          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
