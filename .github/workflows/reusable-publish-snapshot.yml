@@ -48,11 +48,6 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Verify dependency licenses
-        uses: eclipse-keypop/keypop-actions/actions/dash-licenses@main  # NOSONAR - Same organization, trusted source
-        with:
-          working-directory: ${{ inputs.working-directory }}
-
       - name: Extract project name and version
         id: metadata
         run: |
@@ -82,7 +77,7 @@ jobs:
 
       - name: Update documentation
         if: ${{ inputs.update-documentation }}
-        uses: eclipse-keypop/keypop-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
+        uses: calypsonet/calypsonet-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
         with:
           project-name: ${{ steps.metadata.outputs.project-name }}
           project-version: ${{ steps.metadata.outputs.project-version }}

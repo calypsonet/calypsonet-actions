@@ -20,7 +20,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Action Version Info"
-        echo "Using keypop-actions version: ${{ env.GITHUB_ACTION_REF }}"
+        echo "Using calypsonet-actions version: ${{ env.GITHUB_ACTION_REF }}"
         echo "SHA: ${{ github.sha }}"
         echo "Action path: ${{ github.action_path }}"
         echo "::endgroup::"
@@ -41,15 +41,15 @@ runs:
       working-directory: ${{ inputs.project-name }}
       run: |
         git add -A
-        git config user.email "${{ inputs.project-name }}-bot@eclipse.org"
+        git config user.email "${{ inputs.project-name }}-bot@calypsonet.org"
         git config user.name "${{ inputs.project-name }}-bot"
         git commit --allow-empty -m "docs: update documentation $GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
         git log --graph --abbrev-commit --date=relative -n 5
-        git push "https://${{ inputs.github-bot-token }}@github.com/eclipse-keypop/${{ inputs.project-name }}.git" HEAD:doc
+        git push "https://${{ inputs.github-bot-token }}@github.com/calypsonet/${{ inputs.project-name }}.git" HEAD:doc
 
     - name: Trigger central documentation update
       uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ inputs.github-bot-token }}
-        repository: eclipse-keypop/keypop-api-docs
+        repository: calypsonet/calypsonet-terminal-api-docs
         event-type: update-submodules

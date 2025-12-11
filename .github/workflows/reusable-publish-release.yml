@@ -22,7 +22,7 @@ on:
         default: true
         type: boolean
       namespace:
-        default: 'org.eclipse.keypop'
+        default: 'org.calypsonet'
         type: string
       working-directory:
         required: false
@@ -56,11 +56,6 @@ jobs:
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
-
-      - name: Verify dependency licenses
-        uses: eclipse-keypop/keypop-actions/actions/dash-licenses@main  # NOSONAR - Same organization, trusted source
-        with:
-          working-directory: ${{ inputs.working-directory }}
 
       - name: Extract project name and version
         id: metadata
@@ -137,7 +132,7 @@ jobs:
 
       - name: Update documentation
         if: ${{ inputs.update-documentation }}
-        uses: eclipse-keypop/keypop-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
+        uses: calypsonet/calypsonet-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
         with:
           project-name: ${{ steps.metadata.outputs.project-name }}
           project-version: ${{ github.event.release.tag_name }}

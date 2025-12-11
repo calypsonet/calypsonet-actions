@@ -1,8 +1,8 @@
-# Eclipse Keypop Reusable Workflows and Composite Actions
+# Calypsonet Reusable Workflows and Composite Actions
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository contains all **GitHub Actions** and **reusable workflows** for the `eclipse-keypop` organization. It's structured to separate **custom composite actions**, **reusable workflows**, and to clearly mark **deprecated** items.
+This repository contains all **GitHub Actions** and **reusable workflows** for the `calypsonet` organization. It's structured to separate **custom composite actions**, **reusable workflows**, and to clearly mark **deprecated** items.
 
 ---
 
@@ -19,7 +19,7 @@ These workflows can be invoked in any org repository via `workflow_call`.
 | Publish Doxygen    | Generate and publish Doxygen documentation (C++) to `doc` branch | `.github/workflows/reusable-publish-doxygen.yml`    |
 
 **Workflow Logic**:
-- **Build and Test**: Sets up Java environment, runs Gradle build, and verifies dependency license compliance.
+- **Build and Test**: Sets up Java environment and runs Gradle build.
 - **C++ Build and Test**: Builds C++ projects using CMake across three platforms (Linux with GCC, macOS with Clang, Windows with Clang/Visual Studio 2022). Automatically installs required dependencies (clang, cmake, cppcheck, clang-format, clang-tidy, gcc, pre-commit) and supports optional extra Linux dependencies. Runs tests on Linux/macOS if a test executable name is provided.
 - **Publish Snapshot**: Validates version is not already released, builds the project, publishes to Maven Central Snapshots, and updates documentation.
 - **Publish Release**: Verifies version consistency, signs artifacts with GPG, publishes to Maven Central, triggers automatic upload, and updates documentation.
@@ -34,12 +34,10 @@ These actions live under `actions/` and encapsulate reusable complex workflows.
 | Name                 | Description                                             | Path                                      | Status     |
 |----------------------|---------------------------------------------------------|-------------------------------------------|------------|
 | doxygen              | Generate and publish Doxygen documentation (C++ API)    | `actions/doxygen/action.yml`              | **Active** |
-| dash-licenses        | Verify dependency license compliance using Eclipse Dash | `actions/dash-licenses/action.yml`        | **Active** |
 | update-documentation | Generate and push Javadoc to `doc` branch               | `actions/update-documentation/action.yml` | **Active** |
 
 **Composite Action Logic**:
 - **doxygen**: Installs Python and dependencies, validates and patches Doxyfile, generates documentation via Doxygen, prepares versioned directory structure, deploys to `doc` branch, and triggers centralized documentation update.
-- **dash-licenses**: Sets up Java, generates Gradle lockfile (`gradle.lockfile`), downloads Eclipse Dash tool, verifies dependency licenses, and archives compliance report.
 - **update-documentation**: Prepares Javadoc via shell script, commits and pushes to `doc` branch, then triggers centralized documentation update.
 
 ---
@@ -55,7 +53,7 @@ on:
 
 jobs:
   publish:
-    uses: eclipse-keypop/keypop-actions/.github/workflows/reusable-publish-snapshot.yml@main
+    uses: calypsonet/calypsonet-actions/.github/workflows/reusable-publish-snapshot.yml@main
     secrets:
       CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
       CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
@@ -70,7 +68,7 @@ on:
 
 jobs:
   build:
-    uses: eclipse-keypop/keypop-actions/.github/workflows/reusable-build-and-test.yml@main
+    uses: calypsonet/calypsonet-actions/.github/workflows/reusable-build-and-test.yml@main
 ```
 
 ```yaml
@@ -83,17 +81,13 @@ on:
 
 jobs:
   build:
-    uses: eclipse-keypop/keypop-actions/.github/workflows/reusable-cpp-build-and-test.yml@main
+    uses: calypsonet/calypsonet-actions/.github/workflows/reusable-cpp-build-and-test.yml@main
     with:
       test_executable_name: 'my-test-app'  # Optional: name of the test executable to run
       extra_linux_deps: 'libssl-dev'       # Optional: additional Linux dependencies
 ```
 
 ---
-
-## 🤝 Contributing
-
-Please read our [contribution guidelines](https://keypop.org/community/contributing/) before submitting any changes.
 
 ## 📄 License
 

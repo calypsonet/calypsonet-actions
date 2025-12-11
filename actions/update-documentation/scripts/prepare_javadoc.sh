@@ -8,7 +8,7 @@ version=$2
 echo "Computed current API version: $version"
 
 echo "Clone $repository_name..."
-git clone https://github.com/eclipse-keypop/$repository_name.git
+git clone https://github.com/calypsonet/$repository_name.git
 
 cd $repository_name
 
