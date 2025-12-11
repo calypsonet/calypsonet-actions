@@ -1,0 +1,89 @@
+name: Reusable - Publish Snapshot to Maven Central
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: false
+        default: 'ubuntu-latest'
+        type: string
+      java-version:
+        required: false
+        default: '17'
+        type: string
+      java-distribution:
+        required: false
+        default: 'temurin'
+        type: string
+      update-documentation:
+        required: false
+        default: true
+        type: boolean
+      working-directory:
+        required: false
+        default: '.'
+        type: string
+    secrets:
+      CENTRAL_SONATYPE_TOKEN_USERNAME:
+        required: true
+      CENTRAL_SONATYPE_TOKEN_PASSWORD:
+        required: true
+      ORG_GITHUB_BOT_TOKEN:
+        required: true
+
+jobs:
+  reusable-publish-snapshot:
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ inputs.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: ${{ inputs.java-distribution }}
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Verify dependency licenses
+        uses: eclipse-keypop/keypop-actions/actions/dash-licenses@main  # NOSONAR - Same organization, trusted source
+        with:
+          working-directory: ${{ inputs.working-directory }}
+
+      - name: Extract project name and version
+        id: metadata
+        run: |
+          PROJECT_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          PROJECT_VERSION=$(grep "^version" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "project-version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if this version is already released
+        run: |
+          PROJECT_VERSION=${{ steps.metadata.outputs.project-version }}
+          RELEASE_VERSION=${PROJECT_VERSION%-SNAPSHOT}
+          
+          if git tag -l | grep -q "^${RELEASE_VERSION}$"; then
+            echo "Error: Tag '$RELEASE_VERSION' already exists. Please update the version in gradle.properties."
+            exit 1
+          fi
+
+      - name: Build and publish snapshot to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_sonatypeURL: https://central.sonatype.com/repository/maven-snapshots/
+          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: |
+          echo "Building and publishing snapshot package..."
+          ./gradlew build publish
+
+      - name: Update documentation
+        if: ${{ inputs.update-documentation }}
+        uses: eclipse-keypop/keypop-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
+        with:
+          project-name: ${{ steps.metadata.outputs.project-name }}
+          project-version: ${{ steps.metadata.outputs.project-version }}
+          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}

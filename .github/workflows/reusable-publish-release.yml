@@ -1,0 +1,144 @@
+name: Reusable - Publish Release to Maven Central
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: false
+        default: 'ubuntu-latest'
+        type: string
+      java-version:
+        default: '17'
+        type: string
+      java-distribution:
+        default: 'temurin'
+        type: string
+      check-version:
+        required: false
+        default: true
+        type: boolean
+      update-documentation:
+        required: false
+        default: true
+        type: boolean
+      namespace:
+        default: 'org.eclipse.keypop'
+        type: string
+      working-directory:
+        required: false
+        default: '.'
+        type: string
+    secrets:
+      CENTRAL_SONATYPE_TOKEN_USERNAME:
+        required: true
+      CENTRAL_SONATYPE_TOKEN_PASSWORD:
+        required: true
+      GPG_PRIVATE_KEY:
+        required: true
+      GPG_PASSPHRASE:
+        required: true
+      ORG_GITHUB_BOT_TOKEN:
+        required: true
+
+jobs:
+  reusable-publish-release:
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ inputs.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: ${{ inputs.java-distribution }}
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Verify dependency licenses
+        uses: eclipse-keypop/keypop-actions/actions/dash-licenses@main  # NOSONAR - Same organization, trusted source
+        with:
+          working-directory: ${{ inputs.working-directory }}
+
+      - name: Extract project name and version
+        id: metadata
+        run: |
+          PROJECT_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          PROJECT_VERSION=$(grep "^version" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "project-version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check version
+        if: ${{ inputs.check-version }}
+        run: |
+          EXPECTED_PROJECT_VERSION="${{ github.event.release.tag_name }}-SNAPSHOT"
+          ACTUAL_PROJECT_VERSION="${{ steps.metadata.outputs.project-version }}"
+
+          echo "Expected project version: $EXPECTED_PROJECT_VERSION"
+          echo "Actual project version from gradle.properties: $ACTUAL_PROJECT_VERSION"
+
+          if [ "$EXPECTED_PROJECT_VERSION" != "$ACTUAL_PROJECT_VERSION" ]; then
+            echo "::error::Mismatch between release tag and project version"
+            exit 1
+          fi
+
+      - name: Retrieve fingerprint of the signing subkey
+        id: fingerprint
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" > private.key
+          gpg --batch --import private.key
+          fingerprint=$(gpg --list-keys --with-subkey-fingerprint | awk '/^sub/ {getline; print $1}')
+          echo "fingerprint=$fingerprint" >> $GITHUB_OUTPUT
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
+
+      - name: Build and publish release
+        env:
+          ORG_GRADLE_PROJECT_sonatypeURL: https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/
+          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          ORG_GRADLE_PROJECT_releaseTag: ${{ github.event.release.tag_name }}
+        run: |
+          echo "Building and publishing release package..."
+          ./gradlew build publish
+
+      - name: Trigger automatic upload to Maven Central
+        env:
+          NAMESPACE: ${{ inputs.namespace }}
+        run: |
+          echo "Triggering upload to Maven Central..."
+          encoded_auth=$(echo -n "${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}:${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}" | base64)
+          response_file=$(mktemp)
+          response_code=$(curl -v --connect-timeout 30 --max-time 300 -X POST \
+            -H "Authorization: Bearer $encoded_auth" \
+            -H "Content-Type: application/json" \
+            -o "$response_file" \
+            -w "%{http_code}" \
+            "https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/${NAMESPACE}?publishing_type=automatic")
+          echo "HTTP response code: $response_code"
+          echo "Response body:"
+          cat "$response_file"
+          if [ "$response_code" -ne 200 ]; then
+            echo "❌ Upload failed with HTTP status code $response_code"
+            exit 1
+          else
+            echo "✅ Upload triggered successfully."
+          fi
+          rm -f "$response_file"
+
+      - name: Update documentation
+        if: ${{ inputs.update-documentation }}
+        uses: eclipse-keypop/keypop-actions/actions/update-documentation@main  # NOSONAR - Same organization, trusted source
+        with:
+          project-name: ${{ steps.metadata.outputs.project-name }}
+          project-version: ${{ github.event.release.tag_name }}
+          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}

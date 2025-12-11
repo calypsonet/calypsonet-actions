@@ -1,0 +1,113 @@
+name: 'C++ API Documentation'
+description: 'Generate and publish Doxygen documentation'
+branding:
+  icon: 'book-open'
+  color: 'blue'
+inputs:
+  version:
+    description: 'Version to publish'
+    required: false
+  repo-name:
+    description: 'Repository name'
+    required: true
+  github-token:
+    description: 'GitHub token for deployment and triggering central documentation update'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Show Action Version
+      shell: bash
+      run: |
+        echo "::group::Action Version Info"
+        echo "Using keypop-actions version: ${{ env.GITHUB_ACTION_REF }}"
+        echo "SHA: ${{ github.sha }}"
+        echo "Action path: ${{ github.action_path }}"
+        echo "::endgroup::"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Python dependencies
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        echo "Installing Python dependencies from $ACTION_PATH/scripts/requirements.txt"
+        python -m pip install --upgrade pip
+        pip install -r "$ACTION_PATH/scripts/requirements.txt"
+
+    - name: Check version
+      if: inputs.version != ''
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: python "$ACTION_PATH/scripts/check_version.py" "$VERSION"
+
+    - name: Copy Doxyfile and logo.svg from action
+      shell: bash
+      env:
+        REPO_NAME: ${{ inputs.repo-name }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        echo "Copying Doxyfile and logo.svg from $ACTION_PATH/doxygen/ to /home/runner/work/$REPO_NAME/$REPO_NAME/.github/doxygen/"
+        mkdir -p "/home/runner/work/$REPO_NAME/$REPO_NAME/.github/doxygen/"
+        cp -r "$ACTION_PATH/doxygen/." "/home/runner/work/$REPO_NAME/$REPO_NAME/.github/doxygen/"
+
+    - name: Patch Doxyfile
+      if: always()
+      shell: bash
+      env:
+        REPO_NAME: ${{ inputs.repo-name }}
+        VERSION: ${{ inputs.version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: python "$ACTION_PATH/scripts/patch_doxyfile.py" "/home/runner/work/$REPO_NAME/$REPO_NAME/.github/doxygen/Doxyfile" "$VERSION"
+
+    - name: Generate documentation
+      uses: mattnotmitt/doxygen-action@v1.9.2
+      with:
+        working-directory: .github/doxygen/
+        doxyfile-path: ./Doxyfile
+
+    - name: Prepare documentation
+      shell: bash
+      env:
+        REPO_NAME: ${{ inputs.repo-name }}
+        VERSION: ${{ inputs.version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        python "$ACTION_PATH/scripts/prepare_documentation.py" \
+          --github-org "${GITHUB_REPOSITORY_OWNER}" \
+          --repo-name "$REPO_NAME" \
+          --version "$VERSION"
+
+    - name: Deploy to doc branch
+      shell: bash
+      env:
+        REPO_NAME: ${{ inputs.repo-name }}
+        VERSION: ${{ inputs.version }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      working-directory: ${{ inputs.repo-name }}
+      run: |
+        git config user.name "Eclipse Keypop Bot"
+        git config user.email "${REPO_NAME}-bot@eclipse.org"
+        git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        git add .
+        if [ -n "$VERSION" ]; then
+          git commit -m "docs: update $VERSION documentation"
+        else
+          git diff --quiet && git diff --staged --quiet || git commit -m "docs: update snapshot documentation"
+        fi
+        git push origin doc --force
+
+    - name: Trigger central documentation update
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ inputs.github-token }}
+        repository: eclipse-keypop/keypop-api-docs
+        event-type: update-submodules

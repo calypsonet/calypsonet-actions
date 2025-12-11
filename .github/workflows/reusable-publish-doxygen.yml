@@ -1,0 +1,35 @@
+name: Reusable - Generate and Publish Doxygen Documentation
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to publish (leave empty for snapshot)'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      ORG_GITHUB_BOT_TOKEN:
+        description: 'Organization GitHub token for deployment and triggering central documentation update'
+        required: true
+
+jobs:
+  reusable-doxygen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Extract repository name
+        id: repo
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          echo "name=$REPO_NAME" >> $GITHUB_OUTPUT
+
+      - name: Generate and publish Doxygen documentation
+        uses: eclipse-keypop/keypop-actions/actions/doxygen@main  # NOSONAR - Same organization, trusted source
+        with:
+          version: ${{ inputs.version }}
+          repo-name: ${{ steps.repo.outputs.name }}
+          github-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
