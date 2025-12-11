@@ -1,0 +1,55 @@
+name: Update documentation branch
+description: Generate and push Javadoc to the `doc` branch
+
+inputs:
+  project-name:
+    description: Project name
+    required: true
+  project-version:
+    description: Project version
+    required: true
+  github-bot-token:
+    description: GitHub bot token (used for authentication)
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Show Action Version
+      shell: bash
+      run: |
+        echo "::group::Action Version Info"
+        echo "Using calypsonet-actions version: ${{ env.GITHUB_ACTION_REF }}"
+        echo "SHA: ${{ github.sha }}"
+        echo "Action path: ${{ github.action_path }}"
+        echo "::endgroup::"
+
+    - name: Make prepare_javadoc.sh executable
+      shell: bash
+      run: chmod +x ${{ github.action_path }}/scripts/prepare_javadoc.sh
+
+    - name: Run prepare_javadoc.sh
+      shell: bash
+      run: |
+        ${{ github.action_path }}/scripts/prepare_javadoc.sh \
+          "${{ inputs.project-name }}" \
+          "${{ inputs.project-version }}"
+
+    - name: Commit and push Javadoc to doc branch
+      shell: bash
+      working-directory: ${{ inputs.project-name }}
+      run: |
+        git add -A
+        git config user.email "${{ inputs.project-name }}-bot@calypsonet.org"
+        git config user.name "${{ inputs.project-name }}-bot"
+        git commit --allow-empty -m "docs: update documentation $GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
+        git log --graph --abbrev-commit --date=relative -n 5
+        git push "https://${{ inputs.github-bot-token }}@github.com/calypsonet/${{ inputs.project-name }}.git" HEAD:doc
+
+    - name: Trigger central documentation update
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ inputs.github-bot-token }}
+        repository: calypsonet/calypsonet-terminal-api-docs
+        event-type: update-submodules
