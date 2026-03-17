@@ -24,6 +24,7 @@ mkdir $version
 echo "Copy javadoc and uml files..."
 cp -rf ../build/docs/javadoc/* $version/
 cp -rf ../build/dokkaHtml/* $version/
+cp -rf ../build/dokka/html/* $version/
 cp -rf ../plugin/build/dokka/html/* $version/
 cp -rf ../src/main/uml/api_*.svg $version/
 cp -rf ../docs/uml/api_*.svg $version/
