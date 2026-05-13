@@ -79,29 +79,14 @@ jobs:
             exit 1
           fi
 
-      - name: Retrieve fingerprint of the signing subkey
-        id: fingerprint
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-        run: |
-          echo "$GPG_PRIVATE_KEY" > private.key
-          gpg --batch --import private.key
-          fingerprint=$(gpg --list-keys --with-subkey-fingerprint | awk '/^sub/ {getline; print $1}')
-          echo "fingerprint=$fingerprint" >> $GITHUB_OUTPUT
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
-
       - name: Build and publish release
         env:
           ORG_GRADLE_PROJECT_sonatypeURL: https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/
           ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           ORG_GRADLE_PROJECT_releaseTag: ${{ github.event.release.tag_name }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "Building and publishing release package..."
           ./gradlew build publish
