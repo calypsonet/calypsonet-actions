@@ -1,0 +1,56 @@
+name: Reusable - Publish Release
+
+on:
+  workflow_call:
+    secrets:
+      ORG_GITHUB_BOT_TOKEN:
+        required: true
+
+jobs:
+  reusable-publish-release:
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Extract project name and version
+        id: metadata
+        run: |
+          PROJECT_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          PROJECT_VERSION=$(grep "^version" VERSION | cut -d'=' -f2 | tr -d ' ')
+          echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "project-version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if this version is already released
+        run: |
+          EXPECTED_PROJECT_VERSION="${{ github.event.release.tag_name }}-SNAPSHOT"
+          ACTUAL_PROJECT_VERSION="${{ steps.metadata.outputs.project-version }}"
+
+          echo "Expected project version: $EXPECTED_PROJECT_VERSION"
+          echo "Actual project version from VERSION file: $ACTUAL_PROJECT_VERSION"
+
+          if [ "$EXPECTED_PROJECT_VERSION" != "$ACTUAL_PROJECT_VERSION" ]; then
+            echo "::error::Mismatch between release tag and project version"
+            exit 1
+          fi
+
+      - name: Install Asciidoctor
+        run: sudo gem install asciidoctor rouge
+
+      - name: Convert AsciiDoc to HTML
+        run: |
+          asciidoctor api_specification.adoc \
+            --out-file index.html \
+            -a rouge-style=github \
+            -a source-highlighter=rouge \
+            -a icons=font \
+            -a docinfo=shared \
+            -a docinfodir=assets
+
+      - name: Update documentation
+        uses: calypsonet/calypsonet-actions/actions/update-specification@main  # NOSONAR - Same organization, trusted source
+        with:
+          project-name: ${{ steps.metadata.outputs.project-name }}
+          project-version: ${{ steps.metadata.outputs.project-version }}
+          github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
