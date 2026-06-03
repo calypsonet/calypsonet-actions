@@ -32,19 +32,6 @@ jobs:
             exit 1
           fi
 
-      - name: Install Asciidoctor
-        run: sudo gem install asciidoctor rouge
-
-      - name: Convert AsciiDoc to HTML
-        run: |
-          asciidoctor api_specification.adoc \
-            --out-file index.html \
-            -a rouge-style=github \
-            -a source-highlighter=rouge \
-            -a icons=font \
-            -a docinfo=shared \
-            -a docinfodir=assets
-
       - name: Update documentation
         uses: calypsonet/calypsonet-actions/actions/update-specification@main  # NOSONAR - Same organization, trusted source
         with:
