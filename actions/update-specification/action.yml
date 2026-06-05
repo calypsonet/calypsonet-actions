@@ -8,6 +8,9 @@ inputs:
   project-version:
     description: Project version
     required: true
+  specification-name:
+    description: Specification full name (HTML and PDF)
+    required: true
   github-bot-token:
     description: GitHub bot token (used for authentication)
     required: true
@@ -34,7 +37,8 @@ runs:
       run: |
         ${{ github.action_path }}/scripts/prepare_specification.sh \
           "${{ inputs.project-name }}" \
-          "${{ inputs.project-version }}"
+          "${{ inputs.project-version }}" \
+          "${{ inputs.specification-name }}"
 
     - name: Commit and push Specification to doc branch
       shell: bash

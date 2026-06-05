@@ -10,17 +10,27 @@ jobs:
   reusable-publish-snapshot:
     runs-on: 'ubuntu-latest'
 
+    container:
+      image: asciidoctor/docker-asciidoctor:latest
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
 
-      - name: Extract project name and version
+      - name: Extract project name, version and specification name
         id: metadata
         run: |
           PROJECT_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           PROJECT_VERSION=$(grep "^version" VERSION | cut -d'=' -f2 | tr -d ' ')
+          
+          CLEANED_NAME=$(echo "$RAW_NAME" | sed 's/^calypsonet-terminal-//; s/-uml-api$//')
+          PASCAL_CASE_NAME=$(echo "$CLEANED_NAME" | awk -F'-' '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) substr($i,2)}')
+          SPEC_NAME="CNA_TerminalAPI_${PASCAL_CASE_NAME}"
+          SPEC_FINAL_NAME="${SPEC_NAME}_v${SPEC_VERSION}"
+          
           echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
           echo "project-version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+          echo "specification-name=$SPEC_FINAL_NAME" >> $GITHUB_OUTPUT
 
       - name: Check if this version is already released
         run: |
@@ -32,9 +42,19 @@ jobs:
             exit 1
           fi
 
+      - name: Generation of HTML and PDF deliverables
+        run: |
+          SPEC_NAME=${{ steps.metadata.outputs.specification-name }}"
+          
+          mkdir -p gen
+          
+          asciidoctor -o "gen/${SPEC_NAME}.html" api_specification.adoc
+          asciidoctor-pdf -o "gen/${SPEC_NAME}.pdf" api_specification.adoc
+
       - name: Update documentation
         uses: calypsonet/calypsonet-actions/actions/update-specification@main  # NOSONAR - Same organization, trusted source
         with:
           project-name: ${{ steps.metadata.outputs.project-name }}
           project-version: ${{ steps.metadata.outputs.project-version }}
+          specification-name: ${{ steps.metadata.outputs.specification-name }}
           github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
