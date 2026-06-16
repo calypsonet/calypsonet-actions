@@ -2,14 +2,14 @@ name: Update documentation branch
 description: Generate and push Specification to the `doc` branch
 
 inputs:
-  project-name:
-    description: Project name
+  repo-name:
+    description: Repo name
     required: true
-  project-version:
-    description: Project version
+  spec-version:
+    description: Spec version
     required: true
-  specification-name:
-    description: Specification full name (HTML and PDF)
+  spec-full-name:
+    description: Spec full name (HTML and PDF)
     required: true
   github-bot-token:
     description: GitHub bot token (used for authentication)
@@ -36,20 +36,20 @@ runs:
       shell: bash
       run: |
         ${{ github.action_path }}/scripts/prepare_specification.sh \
-          "${{ inputs.project-name }}" \
-          "${{ inputs.project-version }}" \
-          "${{ inputs.specification-name }}"
+          "${{ inputs.repo-name }}" \
+          "${{ inputs.spec-version }}" \
+          "${{ inputs.spec-full-name }}"
 
     - name: Commit and push Specification to doc branch
       shell: bash
-      working-directory: ${{ inputs.project-name }}
+      working-directory: ${{ inputs.repo-name }}
       run: |
         git add -A
-        git config user.email "${{ inputs.project-name }}-bot@calypsonet.org"
-        git config user.name "${{ inputs.project-name }}-bot"
+        git config user.email "${{ inputs.repo-name }}-bot@calypsonet.org"
+        git config user.name "${{ inputs.repo-name }}-bot"
         git commit --allow-empty -m "docs: update documentation $GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
         git log --graph --abbrev-commit --date=relative -n 5
-        git push "https://${{ inputs.github-bot-token }}@github.com/calypsonet/${{ inputs.project-name }}.git" HEAD:doc
+        git push "https://${{ inputs.github-bot-token }}@github.com/calypsonet/${{ inputs.repo-name }}.git" HEAD:doc
 
     - name: Trigger central documentation update
       uses: peter-evans/repository-dispatch@v3

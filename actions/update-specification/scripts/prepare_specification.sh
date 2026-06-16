@@ -2,16 +2,16 @@
 
 echo "Compute the current API version..."
 
-repository_name=$1
-version=$2
-specification_name=$3
+repo_name=$1
+spec_version=$2
+spec_full_name=$3
 
-echo "Computed current API version: $version"
+echo "Computed current API version: $spec_version"
 
-echo "Clone $repository_name..."
-git clone https://github.com/calypsonet/$repository_name.git
+echo "Clone $repo_name..."
+git clone https://github.com/calypsonet/$repo_name.git
 
-cd $repository_name
+cd $repo_name
 
 echo "Checkout doc branch..."
 git checkout -f doc
@@ -19,13 +19,13 @@ git checkout -f doc
 echo "Delete existing SNAPSHOT directory..."
 rm -rf *-SNAPSHOT
 
-echo "Create target directory $version..."
-mkdir $version
+echo "Create target directory $spec_version..."
+mkdir $spec_version
 
 echo "Copy specification and uml files..."
-cp -rf ../gen/api_class_diagram.svg $version/$specification_name.svg
-cp -rf ../gen/$specification_name.html $version/
-cp -rf ../gen/$specification_name.pdf $version/
+cp -rf ../gen/api_class_diagram.svg $spec_version/$spec_full_name.svg
+cp -rf ../gen/$spec_full_name.html $spec_version/
+cp -rf ../gen/$spec_full_name.pdf $spec_version/
 
 # Find the latest stable version (first non-SNAPSHOT)
 latest_stable=$(ls -d [0-9]*/ | grep -v SNAPSHOT | cut -f1 -d'/' | sort -Vr | head -n1)
@@ -50,9 +50,9 @@ for directory in $sorted_dirs
 do
   # If this is the stable version, write latest-stable entry first
   if [ "$directory" = "$latest_stable" ]; then
-      echo "| **$directory (latest stable)** | [API class diagram](latest-stable/$specification_name.svg)<br>[API specification (HTML)](latest-stable/$specification_name.html)<br>[API specification (PDF)](latest-stable/$specification_name.pdf) |" >> list_versions.md
+      echo "| **$directory (latest stable)** | [API class diagram](latest-stable/$spec_full_name.svg)<br>[API specification (HTML)](latest-stable/$spec_full_name.html)<br>[API specification (PDF)](latest-stable/$spec_full_name.pdf) |" >> list_versions.md
   else
-      echo "| $directory | [API class diagram]($directory/$specification_name.svg)<br>[API specification (HTML)]($directory/$specification_name.html)<br>[API specification (PDF)]($directory/$specification_name.pdf) |" >> list_versions.md
+      echo "| $directory | [API class diagram]($directory/$spec_full_name.svg)<br>[API specification (HTML)]($directory/$spec_full_name.html)<br>[API specification (PDF)]($directory/$spec_full_name.pdf) |" >> list_versions.md
   fi
 done
 

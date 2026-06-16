@@ -17,47 +17,57 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v6
 
-      - name: Extract project name and version
+      - name: Extract repo name, spec version and spec full name
         id: metadata
         run: |
-          PROJECT_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
-          PROJECT_VERSION=$(grep "^version" VERSION | cut -d'=' -f2 | tr -d ' ')
-          
-          CLEANED_NAME=$(echo "$RAW_NAME" | sed 's/^calypsonet-terminal-//; s/-uml-api$//')
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          CLEANED_NAME=$(echo "$REPO_NAME" | sed 's/^calypsonet-terminal-//; s/-uml-api$//')
           PASCAL_CASE_NAME=$(echo "$CLEANED_NAME" | awk -F'-' '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) substr($i,2)}')
           SPEC_NAME="CNA_TerminalAPI_${PASCAL_CASE_NAME}"
-          SPEC_FINAL_NAME="${SPEC_NAME}_v${SPEC_VERSION}"
           
-          echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
-          echo "project-version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
-          echo "specification-name=$SPEC_FINAL_NAME" >> $GITHUB_OUTPUT
+          SPEC_VERSION=$(sed -n 's/^:spec-version:[[:space:]]*//p' api_specification.adoc)
+          SPEC_VERSION=${SPEC_VERSION%-SNAPSHOT}
+          
+          SPEC_FULL_NAME="${SPEC_NAME}_v${SPEC_VERSION}"
+          
+          echo "repo-name=$REPO_NAME" >> $GITHUB_OUTPUT
+          echo "spec-version=$SPEC_VERSION" >> $GITHUB_OUTPUT
+          echo "spec-full-name=$SPEC_FULL_NAME" >> $GITHUB_OUTPUT
 
       - name: Check if this version is already released
         run: |
-          EXPECTED_PROJECT_VERSION="${{ github.event.release.tag_name }}-SNAPSHOT"
-          ACTUAL_PROJECT_VERSION="${{ steps.metadata.outputs.project-version }}"
+          EXPECTED_SPEC_VERSION="${{ github.event.release.tag_name }}"
+          ACTUAL_SPEC_VERSION="${{ steps.metadata.outputs.spec-version }}"
 
-          echo "Expected project version: $EXPECTED_PROJECT_VERSION"
-          echo "Actual project version from VERSION file: $ACTUAL_PROJECT_VERSION"
+          echo "Expected spec version defined by release tag: $EXPECTED_SPEC_VERSION"
+          echo "Actual spec version extracted from adoc file: $ACTUAL_SPEC_VERSION"
 
-          if [ "$EXPECTED_PROJECT_VERSION" != "$ACTUAL_PROJECT_VERSION" ]; then
-            echo "::error::Mismatch between release tag and project version"
+          if [ "$EXPECTED_SPEC_VERSION" != "$ACTUAL_SPEC_VERSION" ]; then
+            echo "::error::Mismatch between release tag and spec version"
             exit 1
           fi
 
       - name: Generation of HTML and PDF deliverables
         run: |
-          SPEC_NAME=${{ steps.metadata.outputs.specification-name }}"
+          SPEC_FULL_NAME=${{ steps.metadata.outputs.spec-full-name }}
+          SPEC_VERSION=${{ steps.metadata.outputs.spec-version }}
           
           mkdir -p gen
           
-          asciidoctor -o "gen/${SPEC_NAME}.html" api_specification.adoc
-          asciidoctor-pdf -o "gen/${SPEC_NAME}.pdf" api_specification.adoc
+          asciidoctor \
+            -a spec-version="${SPEC_VERSION}" \
+            -o "gen/${SPEC_FULL_NAME}.html" \
+            api_specification.adoc
+          
+          asciidoctor-pdf \
+            -a spec-version="${SPEC_VERSION}" \
+            -o "gen/${SPEC_FULL_NAME}.pdf" \
+            api_specification.adoc
 
       - name: Update documentation
         uses: calypsonet/calypsonet-actions/actions/update-specification@main  # NOSONAR - Same organization, trusted source
         with:
-          project-name: ${{ steps.metadata.outputs.project-name }}
-          project-version: ${{ steps.metadata.outputs.project-version }}
-          specification-name: ${{ steps.metadata.outputs.specification-name }}
+          repo-name: ${{ steps.metadata.outputs.repo-name }}
+          spec-version: ${{ steps.metadata.outputs.spec-version }}
+          spec-full-name: ${{ steps.metadata.outputs.spec-full-name }}
           github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}
