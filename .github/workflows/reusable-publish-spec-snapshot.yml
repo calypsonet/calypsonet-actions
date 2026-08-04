@@ -46,10 +46,12 @@ jobs:
           mkdir -p generated
           
           asciidoctor \
+            -r asciidoctor-diagram \
             -o "generated/${SPEC_FULL_NAME}.html" \
             index.adoc
           
           asciidoctor-pdf \
+            -r asciidoctor-diagram \
             -o "generated/${SPEC_FULL_NAME}.pdf" \
             index.adoc
 
