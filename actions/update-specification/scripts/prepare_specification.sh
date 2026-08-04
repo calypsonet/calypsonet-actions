@@ -23,9 +23,9 @@ echo "Create target directory $spec_version..."
 mkdir $spec_version
 
 echo "Copy specification and uml files..."
-cp -rf ../gen/api_class_diagram.svg $spec_version/$spec_full_name.svg
-cp -rf ../gen/$spec_full_name.html $spec_version/
-cp -rf ../gen/$spec_full_name.pdf $spec_version/
+cp -rf ../generated/class-diagram.svg $spec_version/
+cp -rf ../generated/$spec_full_name.html $spec_version/
+cp -rf ../generated/$spec_full_name.pdf $spec_version/
 
 # Find the latest stable version (first non-SNAPSHOT)
 latest_stable=$(ls -d [0-9]*/ | grep -v SNAPSHOT | cut -f1 -d'/' | sort -Vr | head -n1)
@@ -50,9 +50,9 @@ for directory in $sorted_dirs
 do
   # If this is the stable version, write latest-stable entry first
   if [ "$directory" = "$latest_stable" ]; then
-      echo "| **$directory (latest stable)** | [API class diagram](latest-stable/$spec_full_name.svg)<br>[API specification (HTML)](latest-stable/$spec_full_name.html)<br>[API specification (PDF)](latest-stable/$spec_full_name.pdf) |" >> list_versions.md
+      echo "| **$directory (latest stable)** | [API class diagram](latest-stable/class-diagram.svg)<br>[API specification (HTML)](latest-stable/$spec_full_name.html)<br>[API specification (PDF)](latest-stable/$spec_full_name.pdf) |" >> list_versions.md
   else
-      echo "| $directory | [API class diagram]($directory/$spec_full_name.svg)<br>[API specification (HTML)]($directory/$spec_full_name.html)<br>[API specification (PDF)]($directory/$spec_full_name.pdf) |" >> list_versions.md
+      echo "| $directory | [API class diagram]($directory/class-diagram.svg)<br>[API specification (HTML)]($directory/$spec_full_name.html)<br>[API specification (PDF)]($directory/$spec_full_name.pdf) |" >> list_versions.md
   fi
 done
 
