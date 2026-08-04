@@ -28,14 +28,25 @@ runs:
         echo "Action path: ${{ github.action_path }}"
         echo "::endgroup::"
 
-    - name: Make prepare_specification.sh executable
-      shell: bash
-      run: chmod +x ${{ github.action_path }}/scripts/prepare_specification.sh
-
     - name: Run prepare_specification.sh
       shell: bash
       run: |
-        ${{ github.action_path }}/scripts/prepare_specification.sh \
+        SCRIPT="${{ github.action_path }}/scripts/prepare_specification.sh"
+
+        # In container jobs, GitHub can expose the action under /home/runner/work/_actions
+        # while the mounted workspace path is /__w/_actions.
+        if [ ! -f "$SCRIPT" ] && [[ "$SCRIPT" == /home/runner/work/_actions/* ]]; then
+          SCRIPT="/__w/_actions/${SCRIPT#/home/runner/work/_actions/}"
+        fi
+
+        if [ ! -f "$SCRIPT" ]; then
+          echo "::error::prepare_specification.sh not found."
+          echo "::error::Tried: ${{ github.action_path }}/scripts/prepare_specification.sh"
+          echo "::error::Tried: $SCRIPT"
+          exit 1
+        fi
+
+        bash "$SCRIPT" \
           "${{ inputs.repo-name }}" \
           "${{ inputs.spec-version }}" \
           "${{ inputs.spec-full-name }}"
