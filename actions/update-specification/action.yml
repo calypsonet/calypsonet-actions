@@ -60,7 +60,7 @@ runs:
         git config user.name "${{ inputs.repo-name }}-bot"
         git commit --allow-empty -m "docs: update documentation $GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
         git log --graph --abbrev-commit --date=relative -n 5
-        git push "https://${{ inputs.github-bot-token }}@github.com/calypsonet/${{ inputs.repo-name }}.git" HEAD:doc
+        git push "https://x-access-token:${{ inputs.github-bot-token }}@github.com/calypsonet/${{ inputs.repo-name }}.git" HEAD:doc
 
     - name: Trigger central documentation update
       uses: peter-evans/repository-dispatch@v3
