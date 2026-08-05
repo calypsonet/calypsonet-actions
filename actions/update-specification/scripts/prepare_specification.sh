@@ -48,11 +48,22 @@ sorted_dirs=$(ls -d [0-9]*/ | cut -f1 -d'/' | sort -Vr)
 # Loop through each sorted directory
 for directory in $sorted_dirs
 do
-  # If this is the stable version, write latest-stable entry first
-  if [ "$directory" = "$latest_stable" ]; then
-      echo "| **$directory (latest stable)** | [API class diagram](latest-stable/class-diagram.svg)<br>[API specification (HTML)](latest-stable/$spec_full_name.html)<br>[API specification (PDF)](latest-stable/$spec_full_name.pdf) |" >> list_versions.md
+  # Only add an entry if the class diagram exists for this version
+  if [ -f "$directory/class-diagram.svg" ]; then
+      # If this is the stable version, write latest-stable entry first
+      if [ "$directory" = "$latest_stable" ]; then
+          echo "| **$directory (latest stable)** | [API class diagram](latest-stable/class-diagram.svg)<br>[API specification (HTML)](latest-stable/$spec_full_name.html)<br>[API specification (PDF)](latest-stable/$spec_full_name.pdf) |" >> list_versions.md
+      else
+          echo "| $directory | [API class diagram]($directory/class-diagram.svg)<br>[API specification (HTML)]($directory/$spec_full_name.html)<br>[API specification (PDF)]($directory/$spec_full_name.pdf) |" >> list_versions.md
+      fi
   else
-      echo "| $directory | [API class diagram]($directory/class-diagram.svg)<br>[API specification (HTML)]($directory/$spec_full_name.html)<br>[API specification (PDF)]($directory/$spec_full_name.pdf) |" >> list_versions.md
+      # Former format
+      # If this is the stable version, write latest-stable entry first
+      if [ "$directory" = "$latest_stable" ]; then
+          echo "| **$directory (latest stable)** | [API class diagram](latest-stable/api_class_diagram.svg) |" >> list_versions.md
+      else
+          echo "| $directory | [API class diagram]($directory/api_class_diagram.svg) |" >> list_versions.md
+      fi
   fi
 done
 
