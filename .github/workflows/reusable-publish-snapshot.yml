@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
+        with:
+          fetch-tags: true
 
       - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v5

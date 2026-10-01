@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
+        with:
+          fetch-tags: true
 
       - name: Extract repo name, spec version and spec full name
         id: metadata
