@@ -3,7 +3,9 @@
 # Prepares the "doc" branch of a specification repository:
 #   - installs the freshly generated artifacts under <version>/
 #   - records metadata for that version in <version>/version.yml
-#   - refreshes the latest-stable/ alias (files keep their published name)
+#   - refreshes the latest-stable/ alias (files keep their published name);
+#     when that version has an HTML specification, its copy as index.html makes
+#     <repo>/latest-stable/ a fixed link, as on the Keyple and Keypop sites
 #   - regenerates index.md, whose front matter carries the full version list
 #
 # Presentation is NOT handled here: index.md only exposes data and delegates
@@ -146,10 +148,11 @@ for dir in $(version_dirs); do
 done
 
 # ---------------------------------------------------------------------------
-# latest-stable/ alias, with published file names preserved
+# latest-stable/ alias, with published file names preserved, and fixed link
 # ---------------------------------------------------------------------------
 
 latest_stable=$(version_dirs | grep -v SNAPSHOT | sort -Vr | head -n 1) || true
+latest_stable_path=""
 
 rm -rf latest-stable
 if [ -n "$latest_stable" ]; then
@@ -160,6 +163,18 @@ if [ -n "$latest_stable" ]; then
     case $(basename "$f") in version.yml) continue ;; esac
     cp -f "$f" latest-stable/
   done
+
+  # Fixed link, for versions published in the specification format only (HTML
+  # to view online, HTML/PDF/SVG to download); former versions, with a class
+  # diagram only, get none. Published names change with every release, so the
+  # entry point is a copy of the HTML specification (self-contained, images are
+  # embedded) as index.html: its anchors also work under latest-stable/#...
+  html=""
+  for f in latest-stable/*.html; do html=$f; break; done
+  if [ -n "$html" ]; then
+    cp -f "$html" latest-stable/index.html
+    latest_stable_path="latest-stable/"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -173,6 +188,7 @@ echo "Regenerating index.md..."
   printf 'title: "%s"\n' "$repo_name"
   printf 'repository: "%s"\n' "$repo_name"
   printf 'latest_stable: "%s"\n' "$latest_stable"
+  printf 'latest_stable_path: "%s"\n' "$latest_stable_path"
   printf 'versions:\n'
   for dir in $(version_dirs | sort -Vr); do
     [ -f "$dir/version.yml" ] && cat "$dir/version.yml"
