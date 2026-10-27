@@ -11,6 +11,10 @@ inputs:
   spec-full-name:
     description: Spec full name (HTML and PDF)
     required: true
+  doc-name:
+    description: "Human readable API name (the :doc-name: attribute), shown on the documentation site"
+    required: false
+    default: ""
   github-bot-token:
     description: GitHub bot token (used for authentication)
     required: true
@@ -30,6 +34,8 @@ runs:
 
     - name: Run prepare_specification.sh
       shell: bash
+      env:
+        DOC_NAME: ${{ inputs.doc-name }}
       run: |
         SCRIPT="${{ github.action_path }}/scripts/prepare_specification.sh"
 
@@ -49,7 +55,8 @@ runs:
         bash "$SCRIPT" \
           "${{ inputs.repo-name }}" \
           "${{ inputs.spec-version }}" \
-          "${{ inputs.spec-full-name }}"
+          "${{ inputs.spec-full-name }}" \
+          "$DOC_NAME"
 
     - name: Commit and push Specification to doc branch
       shell: bash

@@ -19,17 +19,19 @@ jobs:
         with:
           fetch-tags: true
 
-      - name: Extract repo name, spec version and spec full name
+      - name: Extract repo name, spec version, spec full name and doc name
         id: metadata
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           SPEC_NAME=$(sed -n 's/^:doc-ref:[[:space:]]*//p' index.adoc)
           SPEC_VERSION=$(sed -n 's/^:revnumber:[[:space:]]*//p' index.adoc)
           SPEC_FULL_NAME="${SPEC_NAME}_v${SPEC_VERSION}"
+          DOC_NAME=$(sed -n 's/^:doc-name:[[:space:]]*//p' index.adoc)
           
           echo "repo-name=$REPO_NAME" >> $GITHUB_OUTPUT
           echo "spec-version=$SPEC_VERSION" >> $GITHUB_OUTPUT
           echo "spec-full-name=$SPEC_FULL_NAME" >> $GITHUB_OUTPUT
+          echo "doc-name=$DOC_NAME" >> $GITHUB_OUTPUT
 
       - name: Check if this version is already released
         run: |
@@ -63,4 +65,5 @@ jobs:
           repo-name: ${{ steps.metadata.outputs.repo-name }}
           spec-version: ${{ steps.metadata.outputs.spec-version }}
           spec-full-name: ${{ steps.metadata.outputs.spec-full-name }}
+          doc-name: ${{ steps.metadata.outputs.doc-name }}
           github-bot-token: ${{ secrets.ORG_GITHUB_BOT_TOKEN }}

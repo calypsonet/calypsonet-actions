@@ -13,19 +13,22 @@
 # the central documentation repository (_includes/ of its gh-pages branch).
 # Re-styling the page therefore never requires releasing this actions repo.
 #
-# Usage: prepare_specification.sh <repo_name> <spec_version> <spec_full_name>
+# Usage: prepare_specification.sh <repo_name> <spec_version> <spec_full_name> [<doc_name>]
+#   doc_name: human readable API name (the :doc-name: attribute of index.adoc),
+#             shown on the documentation site instead of the repository name
 
 set -euo pipefail
 shopt -s nullglob
 
-if [ "$#" -ne 3 ]; then
-  echo "Usage: $0 <repo_name> <spec_version> <spec_full_name>" >&2
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+  echo "Usage: $0 <repo_name> <spec_version> <spec_full_name> [<doc_name>]" >&2
   exit 2
 fi
 
 repo_name=$1
 spec_version=$2
 spec_full_name=$3
+doc_name=${4:-}
 
 # The HTML/PDF/SVG artifacts are produced by the reusable spec workflow in the
 # workspace root, i.e. next to the clone we are about to create. Resolve the
@@ -182,11 +185,15 @@ fi
 # ---------------------------------------------------------------------------
 
 echo "Regenerating index.md..."
+# YAML double-quoted string: escape backslashes, then double quotes.
+doc_name_yaml=${doc_name//\\/\\\\}
+doc_name_yaml=${doc_name_yaml//\"/\\\"}
 {
   printf -- '---\n'
   printf 'layout: default\n'
   printf 'title: "%s"\n' "$repo_name"
   printf 'repository: "%s"\n' "$repo_name"
+  printf 'doc_name: "%s"\n' "$doc_name_yaml"
   printf 'latest_stable: "%s"\n' "$latest_stable"
   printf 'latest_stable_path: "%s"\n' "$latest_stable_path"
   printf 'versions:\n'
