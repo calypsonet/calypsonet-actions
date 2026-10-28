@@ -122,7 +122,11 @@ cd "$repo_name"
 echo "Removing previous SNAPSHOT directories..."
 for d in *-SNAPSHOT; do rm -rf -- "$d"; done
 
+# The directory is wiped first: a re-publication of the same version may carry
+# different file names (document reference date, diagram name), and stale files
+# must not survive next to the new ones.
 echo "Installing artifacts into $spec_version/..."
+rm -rf -- "$spec_version"
 mkdir -p "$spec_version"
 
 for ext in svg html pdf; do
@@ -142,13 +146,10 @@ done
 # Per-version metadata (version.yml), written once per version directory
 # ---------------------------------------------------------------------------
 
-# The version being published: (re)write for SNAPSHOTs (their content evolves)
-# or when no metadata exists yet. Existing metadata is left untouched to keep
-# the doc branch diff minimal; version.yml content is deterministic anyway.
-case $spec_version in
-  *-SNAPSHOT) write_version_yml "$spec_version" ;;
-  *) [ -f "$spec_version/version.yml" ] || write_version_yml "$spec_version" ;;
-esac
+# The version being published is always (re)written: its artifacts have just been
+# installed, so its metadata must describe them. Other versions keep theirs, which
+# keeps the doc branch diff minimal; version.yml content is deterministic anyway.
+write_version_yml "$spec_version"
 
 # Backfill the other versions exactly once (idempotent across runs).
 for dir in $(version_dirs); do
