@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Prepares the "doc" branch of a specification repository:
-#   - installs the freshly generated artifacts under <version>/
+#   - installs the freshly generated artifacts under <version>/, all named after
+#     the published document: <spec_full_name>.html, .pdf and -class-diagram.svg
 #   - records metadata for that version in <version>/version.yml
 #   - refreshes the latest-stable/ alias (files keep their published name);
 #     when that version has an HTML specification, its copy as index.html makes
@@ -74,8 +75,12 @@ write_version_yml() {
   case $dir in *-SNAPSHOT) status="snapshot" ;; esac
 
   local diagram="" html="" pdf=""
-  for f in "$dir"/class-diagram.svg "$dir"/api_class_diagram.svg; do
-    [ -f "$f" ] && diagram=$(basename "$f") && break
+  # Any published diagram name: "<spec_full_name>-class-diagram.svg" (current),
+  # "class-diagram.svg" and "api_class_diagram.svg" (former naming schemes, the
+  # latter spelled with underscores).
+  for f in "$dir"/*class-diagram*.svg "$dir"/*class_diagram*.svg; do
+    diagram=$(basename "$f")
+    break
   done
   for f in "$dir"/*.html; do html=$(basename "$f"); break; done
   for f in "$dir"/*.pdf;  do pdf=$(basename "$f");  break; done
@@ -122,7 +127,7 @@ mkdir -p "$spec_version"
 
 for ext in svg html pdf; do
   case $ext in
-    svg) src="$GENERATED_DIR/class-diagram.svg"    ; dst="$spec_version/class-diagram.svg" ;;
+    svg) src="$GENERATED_DIR/class-diagram.svg"    ; dst="$spec_version/$spec_full_name-class-diagram.svg" ;;
     *)   src="$GENERATED_DIR/$spec_full_name.$ext" ; dst="$spec_version/$spec_full_name.$ext" ;;
   esac
   if [ -f "$src" ]; then
